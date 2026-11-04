@@ -3,6 +3,7 @@ package com.tixora.repository;
 
 import com.tixora.entity.SeatReservation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,4 +42,15 @@ public interface SeatReservationRepository
     void deleteByBookingId(Long bookingId);
 
     void deleteByBookingIdIn(List<Long> bookingIds);
+
+    // Preserve seats after successful payment.
+    @Modifying
+    @Query("""
+            UPDATE SeatReservation sr
+            SET sr.expiresAt = NULL
+            WHERE sr.booking.id = :bookingId
+            """)
+    int clearExpiryByBookingId(
+            @Param("bookingId") Long bookingId
+    );
 }

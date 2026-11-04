@@ -20,6 +20,7 @@ import com.tixora.repository.BookingSeatRepository;
 import com.tixora.repository.SeatRepository;
 import com.tixora.repository.SeatReservationRepository;
 import com.tixora.repository.ShowRepository;
+import com.tixora.repository.PaymentRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,7 @@ public class BookingService {
     private final SeatReservationRepository seatReservationRepository;
     private final ShowRepository showRepository;
     private final BookingExpirationService bookingExpirationService;
+    private final PaymentRepository paymentRepository;
 
     public BookingService(
             BookingRepository bookingRepository,
@@ -49,7 +51,8 @@ public class BookingService {
             SeatRepository seatRepository,
             SeatReservationRepository seatReservationRepository,
             ShowRepository showRepository,
-            BookingExpirationService bookingExpirationService
+            BookingExpirationService bookingExpirationService,
+            PaymentRepository paymentRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingSeatRepository = bookingSeatRepository;
@@ -57,6 +60,7 @@ public class BookingService {
         this.seatReservationRepository = seatReservationRepository;
         this.showRepository = showRepository;
         this.bookingExpirationService = bookingExpirationService;
+        this.paymentRepository = paymentRepository;
     }
 
     // Get seat availability for a particular show
@@ -250,5 +254,37 @@ public class BookingService {
         }
 
         return show;
+    }
+
+    @Transactional(readOnly = true)
+    public BookingResponse getBookingDetails(String bookingReference) {
+
+        if (bookingReference == null || bookingReference.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Booking reference is required."
+            );
+        }
+
+        Booking booking = bookingRepository
+                .findWithDetailsByBookingReference(bookingReference.trim())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Booking not found."
+                ));
+
+        List<BookingSeat> bookingSeats =
+                bookingSeatRepository.findByBookingId(booking.getId());
+
+        var latestPayment = paymentRepository
+                .findFirstByBookingIdOrderByCreatedAtDesc(booking.getId());
+
+        var paymentStatus = latestPayment
+                .map(payment -> payment.getStatus())
+                .orElse(null);
+
+        return BookingMapper.toResponse(
+                booking,
+                bookingSeats,
+                paymentStatus
+        );
     }
 }

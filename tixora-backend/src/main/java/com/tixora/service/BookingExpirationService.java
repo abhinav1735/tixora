@@ -1,4 +1,3 @@
-
 package com.tixora.service;
 
 import com.tixora.entity.Booking;
@@ -33,7 +32,7 @@ public class BookingExpirationService {
         LocalDateTime now = LocalDateTime.now();
 
         List<Booking> expiredBookings =
-                bookingRepository.findByStatusAndExpiresAtLessThanEqual(
+                bookingRepository.findExpiredBookingsForUpdate(
                         BookingStatus.PENDING,
                         now
                 );
@@ -46,14 +45,14 @@ public class BookingExpirationService {
                 .map(Booking::getId)
                 .toList();
 
-        // Mark expired bookings.
+        // Mark bookings as expired.
         expiredBookings.forEach(booking ->
                 booking.setStatus(BookingStatus.EXPIRED)
         );
 
         bookingRepository.saveAll(expiredBookings);
 
-        // Release their reserved seats.
+        // Release reserved seats.
         seatReservationRepository.deleteByBookingIdIn(expiredBookingIds);
     }
 }

@@ -1,0 +1,89 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #10111b;
+    color: #ffffff;
+}
+
+.payment-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 35px;
+    background: #1d1f2e;
+    border: 1px solid #34364a;
+    border-radius: 16px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+    margin-bottom: 10px;
+    color: #8b80ff;
+    font-size: 32px;
+}
+
+h2 {
+    margin-bottom: 30px;
+    font-size: 21px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    color: #c5c6d4;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 20px;
+    border: 1px solid #45475c;
+    border-radius: 8px;
+    outline: none;
+    background: #141522;
+    color: white;
+    font-size: 14px;
+}
+
+input:focus {
+    border-color: #8b80ff;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    background: #7568f5;
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #6254df;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#paymentMessage {
+    margin-top: 20px;
+    color: #c5c6d4;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}

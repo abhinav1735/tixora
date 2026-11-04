@@ -46,4 +46,15 @@ public class BookingController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    // Get complete booking details using booking reference
+    @GetMapping("/{bookingReference}")
+    public ResponseEntity<BookingResponse> getBookingDetails(
+            @PathVariable String bookingReference) {
+
+        BookingResponse response =
+                bookingService.getBookingDetails(bookingReference);
+
+        return ResponseEntity.ok(response);
+    }
 }

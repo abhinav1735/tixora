@@ -1,4 +1,3 @@
-
 package com.tixora.entity;
 
 import jakarta.persistence.*;
@@ -17,18 +16,14 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_payment_status", columnList = "status")
         },
         uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_payment_razorpay_order",
-                        columnNames = "razorpay_order_id"
-                ),
-                @UniqueConstraint(
-                        name = "uk_payment_razorpay_payment",
-                        columnNames = "razorpay_payment_id"
-                ),
-                @UniqueConstraint(
-                        name = "uk_payment_receipt",
-                        columnNames = "receipt"
-                )
+                @UniqueConstraint(name = "uk_payment_razorpay_order",
+                        columnNames = "razorpay_order_id"),
+                @UniqueConstraint(name = "uk_payment_razorpay_payment",
+                        columnNames = "razorpay_payment_id"),
+                @UniqueConstraint(name = "uk_payment_receipt",
+                        columnNames = "receipt"),
+                @UniqueConstraint(name = "uk_payment_refund",
+                        columnNames = "razorpay_refund_id")
         }
 )
 public class Payment {
@@ -50,11 +45,28 @@ public class Payment {
     @Column(name = "razorpay_payment_id", length = 100)
     private String razorpayPaymentId;
 
+    @Column(name = "razorpay_refund_id", length = 100)
+    private String razorpayRefundId;
+
     @NotNull
     @DecimalMin("0.01")
     @Digits(integer = 8, fraction = 2)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
+
+    @DecimalMin("0.00")
+    @Digits(integer = 8, fraction = 2)
+    @Column(name = "refund_amount", precision = 10, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "refund_failure_reason", length = 500)
+    private String refundFailureReason;
+
+    @Column(name = "refund_initiated_at")
+    private LocalDateTime refundInitiatedAt;
+
+    @Column(name = "refund_updated_at")
+    private LocalDateTime refundUpdatedAt;
 
     @Column(nullable = false, length = 3)
     private String currency = "INR";
@@ -84,71 +96,31 @@ public class Payment {
     public Payment() {
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public Booking getBooking() {
-        return booking;
-    }
-
-    public void setBooking(Booking booking) {
-        this.booking = booking;
-    }
-
-    public String getRazorpayOrderId() {
-        return razorpayOrderId;
-    }
-
-    public void setRazorpayOrderId(String razorpayOrderId) {
-        this.razorpayOrderId = razorpayOrderId;
-    }
-
-    public String getReceipt() {
-        return receipt;
-    }
-
-    public void setReceipt(String receipt) {
-        this.receipt = receipt;
-    }
-
-    public String getRazorpayPaymentId() {
-        return razorpayPaymentId;
-    }
-
-    public void setRazorpayPaymentId(String razorpayPaymentId) {
-        this.razorpayPaymentId = razorpayPaymentId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PaymentStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+    public Long getId() { return id; }
+    public Booking getBooking() { return booking; }
+    public void setBooking(Booking booking) { this.booking = booking; }
+    public String getRazorpayOrderId() { return razorpayOrderId; }
+    public void setRazorpayOrderId(String value) { this.razorpayOrderId = value; }
+    public String getReceipt() { return receipt; }
+    public void setReceipt(String receipt) { this.receipt = receipt; }
+    public String getRazorpayPaymentId() { return razorpayPaymentId; }
+    public void setRazorpayPaymentId(String value) { this.razorpayPaymentId = value; }
+    public String getRazorpayRefundId() { return razorpayRefundId; }
+    public void setRazorpayRefundId(String value) { this.razorpayRefundId = value; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
+    public String getRefundFailureReason() { return refundFailureReason; }
+    public void setRefundFailureReason(String value) { this.refundFailureReason = value; }
+    public LocalDateTime getRefundInitiatedAt() { return refundInitiatedAt; }
+    public void setRefundInitiatedAt(LocalDateTime value) { this.refundInitiatedAt = value; }
+    public LocalDateTime getRefundUpdatedAt() { return refundUpdatedAt; }
+    public void setRefundUpdatedAt(LocalDateTime value) { this.refundUpdatedAt = value; }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
+    public PaymentStatus getStatus() { return status; }
+    public void setStatus(PaymentStatus status) { this.status = status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

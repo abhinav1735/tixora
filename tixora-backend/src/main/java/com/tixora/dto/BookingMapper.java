@@ -1,4 +1,3 @@
-
 package com.tixora.dto;
 
 import com.tixora.entity.Booking;
@@ -7,12 +6,11 @@ import com.tixora.entity.PaymentStatus;
 
 import java.util.List;
 
-public class BookingMapper {
+public final class BookingMapper {
 
     private BookingMapper() {
     }
 
-    // Used by the existing booking creation flow.
     public static BookingResponse toResponse(
             Booking booking,
             List<BookingSeat> bookingSeats
@@ -20,14 +18,13 @@ public class BookingMapper {
         return toResponse(booking, bookingSeats, null);
     }
 
-    // Used when fetching complete booking details.
     public static BookingResponse toResponse(
             Booking booking,
             List<BookingSeat> bookingSeats,
             PaymentStatus paymentStatus
     ) {
         if (booking == null || booking.getShow() == null) {
-            throw new IllegalArgumentException("Booking and show are required");
+            throw new IllegalArgumentException("Booking and show are required.");
         }
 
         var show = booking.getShow();
@@ -35,7 +32,7 @@ public class BookingMapper {
         if (show.getMovie() == null
                 || show.getScreen() == null
                 || show.getScreen().getTheatre() == null) {
-            throw new IllegalStateException("Booking details are incomplete");
+            throw new IllegalStateException("Booking details are incomplete.");
         }
 
         List<String> seatLabels = bookingSeats.stream()
@@ -57,7 +54,23 @@ public class BookingMapper {
                 booking.getCustomerName(),
                 booking.getCustomerEmail(),
                 seatLabels,
+                booking.getTicketSubtotal(),
+                booking.getConvenienceFeeAmount(),
+                booking.getGstOnTicketAmount(),
+                booking.getGstOnConvenienceFeeAmount(),
+                booking.getGstAmount(),
                 booking.getTotalAmount(),
+                booking.getFeeTypeSnapshot() == null
+                        ? null : booking.getFeeTypeSnapshot().name(),
+                booking.getConvenienceFeeUnitSnapshot(),
+                booking.getGstEnabledSnapshot(),
+                booking.getGstPercentageSnapshot(),
+                booking.getGstOnTicketPriceSnapshot(),
+                booking.getGstOnConvenienceFeeSnapshot(),
+                booking.getCancellationThresholdHoursSnapshot(),
+                booking.getCancellationPercentageBeforeThresholdSnapshot(),
+                booking.getCancellationPercentageWithinThresholdSnapshot(),
+                booking.getCancellationAllowedAfterShowStartsSnapshot(),
                 booking.getStatus(),
                 paymentStatus,
                 booking.getCreatedAt()

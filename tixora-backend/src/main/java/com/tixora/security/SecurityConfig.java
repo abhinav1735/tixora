@@ -87,6 +87,12 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // Razorpay webhook - public endpoint
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/payments/webhook"
+                        ).permitAll()
+
                         // Public movie browsing
                         .requestMatchers(HttpMethod.GET, "/api/movies/**")
                         .permitAll()

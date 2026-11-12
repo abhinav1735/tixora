@@ -67,4 +67,33 @@ public class RazorpaySignatureService {
             );
         }
     }
+
+    /**
+     * Verifies the webhook signature against the exact raw request body.
+     */
+    public boolean verifyWebhookSignature(byte[] rawBody, String receivedSignature) {
+        String webhookSecret = razorpayProperties.webhookSecret();
+
+        if (rawBody == null || rawBody.length == 0
+                || webhookSecret == null || webhookSecret.isBlank()
+                || receivedSignature == null
+                || !receivedSignature.matches("[a-fA-F0-9]{64}")) {
+            return false;
+        }
+
+        try {
+            Mac mac = Mac.getInstance(HMAC_SHA256);
+            mac.init(new SecretKeySpec(
+                    webhookSecret.getBytes(StandardCharsets.UTF_8),
+                    HMAC_SHA256
+            ));
+
+            byte[] expected = mac.doFinal(rawBody);
+            byte[] received = HexFormat.of().parseHex(receivedSignature);
+            return MessageDigest.isEqual(expected, received);
+        } catch (GeneralSecurityException | IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
 }

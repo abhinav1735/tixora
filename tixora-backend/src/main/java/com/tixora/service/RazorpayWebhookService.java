@@ -1,7 +1,7 @@
+
 package com.tixora.service;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import com.tixora.dto.payment.FailedPaymentRequest;
 import com.tixora.entity.RazorpayWebhookEvent;
 import com.tixora.repository.RazorpayWebhookEventRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class RazorpayWebhookService {
@@ -32,89 +34,175 @@ public class RazorpayWebhookService {
 
     @Transactional
     public void process(String eventId, byte[] rawBody) {
+
         if (eventId == null || eventId.isBlank()) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Missing Razorpay event ID");
+                    HttpStatus.BAD_REQUEST,
+                    "Missing Razorpay event ID"
+            );
         }
 
         final JsonNode root;
+
         try {
             root = objectMapper.readTree(rawBody);
         } catch (Exception exception) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invalid webhook JSON", exception);
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid webhook JSON",
+                    exception
+            );
         }
 
-        String eventType = root.path("event").asText(null);
+        String eventType = text(root, "event");
+
         if (eventType == null || eventType.isBlank()) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Missing webhook event type");
+                    HttpStatus.BAD_REQUEST,
+                    "Missing webhook event type"
+            );
         }
 
+        // Idempotency: already processed event IDs are acknowledged.
         if (eventRepository.existsByEventId(eventId)) {
             return;
         }
 
         eventRepository.saveAndFlush(
-                new RazorpayWebhookEvent(eventId, eventType));
+                new RazorpayWebhookEvent(eventId, eventType)
+        );
 
         JsonNode payload = root.path("payload");
 
         switch (eventType) {
-            case "payment.captured" -> processCaptured(payload);
-            case "refund.created", "refund.processed", "refund.failed" ->
+
+            case "payment.captured" ->
+                    processCaptured(payload);
+
+            case "payment.failed" ->
+                    processFailed(payload);
+
+            case "refund.created",
+                 "refund.processed",
+                 "refund.failed" ->
                     processRefund(payload);
-            case "payment.failed" -> {
-                // A failed attempt is not allowed to overwrite a captured payment.
-                // Existing checkout failure handling remains authoritative.
-            }
+
             default -> {
-                // Unknown events are recorded and acknowledged to avoid endless retries.
+                // Unknown events are recorded and acknowledged.
             }
         }
     }
 
     private void processCaptured(JsonNode payload) {
+
         JsonNode entity = payload.path("payment").path("entity");
+
         String paymentId = text(entity, "id");
         String orderId = text(entity, "order_id");
         Long amount = longValue(entity, "amount");
         String currency = text(entity, "currency");
         String status = text(entity, "status");
 
-        if (paymentId == null || orderId == null || amount == null
+        if (paymentId == null
+                || orderId == null
+                || amount == null
                 || !"captured".equalsIgnoreCase(status)) {
+
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invalid payment.captured payload");
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid payment.captured payload"
+            );
         }
 
-        paymentService.handleCapturedWebhook(orderId, paymentId, amount, currency);
+        paymentService.handleCapturedWebhook(
+                orderId,
+                paymentId,
+                amount,
+                currency
+        );
+    }
+
+    private void processFailed(JsonNode payload) {
+
+        JsonNode entity = payload.path("payment").path("entity");
+
+        String paymentId = text(entity, "id");
+        String orderId = text(entity, "order_id");
+        Long amount = longValue(entity, "amount");
+        String currency = text(entity, "currency");
+        String status = text(entity, "status");
+
+        if (paymentId == null
+                || orderId == null
+                || amount == null
+                || currency == null
+                || !"failed".equalsIgnoreCase(status)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid payment.failed payload"
+            );
+        }
+
+        /*
+         * Reuse existing failure handling.
+         *
+         * PaymentService fetches the payment directly from Razorpay
+         * and verifies its ID, order ID and failed status.
+         *
+         * PaymentTransactionService validates the amount and currency
+         * and protects captured payments from being downgraded.
+         */
+        paymentService.handleFailedPayment(
+                new FailedPaymentRequest(orderId, paymentId)
+        );
     }
 
     private void processRefund(JsonNode payload) {
+
         JsonNode entity = payload.path("refund").path("entity");
+
         String refundId = text(entity, "id");
         String paymentId = text(entity, "payment_id");
         Long amount = longValue(entity, "amount");
         String status = text(entity, "status");
 
-        if (refundId == null || paymentId == null || amount == null || status == null) {
+        if (refundId == null
+                || paymentId == null
+                || amount == null
+                || status == null) {
+
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Invalid refund webhook payload");
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid refund webhook payload"
+            );
         }
 
         paymentTransactionService.handleRefundWebhook(
-                paymentId, refundId, amount, status);
+                paymentId,
+                refundId,
+                amount,
+                status
+        );
     }
 
     private String text(JsonNode node, String field) {
+
         JsonNode value = node.get(field);
-        return value == null || value.isNull() ? null : value.asText();
+
+        return value == null || value.isNull()
+                ? null
+                : value.asText();
     }
 
     private Long longValue(JsonNode node, String field) {
+
         JsonNode value = node.get(field);
-        return value == null || value.isNull() || !value.canConvertToLong()
-                ? null : value.asLong();
+
+        return value == null
+                || value.isNull()
+                || !value.canConvertToLong()
+                ? null
+                : value.asLong();
     }
 }
